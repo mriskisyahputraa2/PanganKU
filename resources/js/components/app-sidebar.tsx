@@ -19,7 +19,11 @@ const mainNavItems: NavItem[] = [
         href: '/products',
         icon: LayoutGrid,
     },
-    
+    {
+        title: 'Halaman Category Product',
+        href: 'category-products',
+        icon: LayoutGrid,
+    },
 ];
 
 const footerNavItems: NavItem[] = [
