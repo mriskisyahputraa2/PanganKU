@@ -2,168 +2,244 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Services\ProductService;
-use Inertia\Inertia;
+use App\Models\Product;
+use App\Models\ProductCategory;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
-    public function __construct(private ProductService $productService) {}
-
     /**
-     * Display listing of products
+     * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index()
     {
-        $filters = [
-            'search' => $request->get('search', ''),
-            'category_id' => $request->get('category_id', '')
-        ];
-
-        $perPage = $request->get('perPage', 10);
-
-        $products = $this->productService->getProducts($filters, $perPage);
-        $categories = $this->productService->getCategories();
+        $products = Product::with('category')
+            ->latest()
+            ->get()
+            ->map(function ($product) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'slug' => $product->slug,
+                    'description' => $product->description,
+                    'price' => $product->price,
+                    'formatted_price' => 'Rp ' . number_format($product->price, 0, ',', '.'),
+                    'hpp' => $product->hpp,
+                    'formatted_hpp' => 'Rp ' . number_format($product->hpp, 0, ',', '.'),
+                    'stock' => $product->stock,
+                    'image' => $product->image,
+                    'category_name' => $product->category->name,
+                    'created_at' => $product->created_at->format('d/m/Y H:i'),
+                ];
+            });
 
         return Inertia::render('admin/products/index', [
-            'products' => $products,
-            'categories' => $categories['success'] ? $categories['categories'] : [],
-            'filters' => $filters,
-            'perPage' => (int) $perPage
+            'products' => $products
         ]);
     }
 
     /**
-     * Show form for creating new product
+     * Show the form for creating a new resource.
      */
     public function create()
     {
-        $categories = $this->productService->getCategories();
+        $categories = ProductCategory::all();
 
         return Inertia::render('admin/products/create', [
-            'categories' => $categories['success'] ? $categories['categories'] : []
+            'categories' => $categories
         ]);
     }
 
     /**
-     * Store new product
+     * Store a newly created resource in storage.
      */
     public function store(Request $request)
     {
-        $result = $this->productService->createProduct($request->all());
-
-        if ($result['success']) {
-            return redirect()->route('admin.products.index')
-                ->with('success', $result['message']);
-        }
-
-        return back()->with('error', $result['message']);
-    }
-
-    /**
-     * Display specific product
-     */
-    public function show(int $id)
-    {
-        $result = $this->productService->getProduct($id);
-
-        if (!$result['success']) {
-            return redirect()->route('admin.products.index')
-                ->with('error', $result['message']);
-        }
-
-        return Inertia::render('admin/products/show', [
-            'product' => $result['product']
+        $request->validate([
+            'category_id' => 'required|exists:product_categories,id',
+            'name' => 'required|string|max:255|unique:products,name',
+            'description' => 'nullable|string',
+            'price' => 'required|numeric|min:0',
+            'hpp' => 'required|numeric|min:0',
+            'stock' => 'required|integer|min:0',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ]);
-    }
 
-    /**
-     * Show form for editing product
-     */
-    public function edit(int $id)
-    {
-        $result = $this->productService->getProduct($id);
-        $categories = $this->productService->getCategories();
+        // Generate unique slug
+        $slug = Str::slug($request->name);
+        $originalSlug = $slug;
+        $counter = 1;
 
-        if (!$result['success']) {
-            return redirect()->route('admin.products.index')
-                ->with('error', $result['message']);
+        while (Product::where('slug', $slug)->exists()) {
+            $slug = $originalSlug . '-' . $counter;
+            $counter++;
         }
 
-        return Inertia::render('admin/products/edit', [
-            'product' => $result['product'],
-            'categories' => $categories['success'] ? $categories['categories'] : []
-        ]);
-    }
-
-    /**
-     * Update product
-     */
-    public function update(Request $request, int $id)
-    {
-        $result = $this->productService->updateProduct($id, $request->all());
-
-        if ($result['success']) {
-            return redirect()->route('admin.products.index')
-                ->with('success', $result['message']);
-        }
-
-        return back()->with('error', $result['message']);
-    }
-
-    /**
-     * Delete product
-     */
-    public function destroy(int $id)
-    {
-        $result = $this->productService->deleteProduct($id);
-
-        if ($result['success']) {
-            return redirect()->route('admin.products.index')
-                ->with('success', $result['message']);
-        }
-
-        return redirect()->route('admin.products.index')
-            ->with('error', $result['message']);
-    }
-
-    /**
-     * API endpoint for getting products
-     */
-    public function apiIndex(Request $request)
-    {
-        $filters = [
-            'search' => $request->get('search', ''),
-            'category_id' => $request->get('category_id', '')
+        $data = [
+            'category_id' => $request->category_id,
+            'name' => $request->name,
+            'slug' => $slug,
+            'description' => $request->description,
+            'price' => $request->price,
+            'hpp' => $request->hpp,
+            'stock' => $request->stock,
         ];
 
-        $perPage = $request->get('perPage', 10);
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('products', 'public');
+            $data['image'] = $imagePath;
+        }
 
-        $products = $this->productService->getProducts($filters, $perPage);
+        Product::create($data);
 
-        return response()->json([
-            'success' => true,
-            'data' => $products
+        return redirect('/products')
+            ->with('success', 'Produk berhasil dibuat.');
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(string $id)
+    {
+        $product = Product::with('category')->findOrFail($id);
+
+        $productData = [
+            'id' => $product->id,
+            'name' => $product->name,
+            'slug' => $product->slug,
+            'description' => $product->description,
+            'price' => $product->price,
+            'formatted_price' => 'Rp ' . number_format($product->price, 0, ',', '.'),
+            'hpp' => $product->hpp,
+            'formatted_hpp' => 'Rp ' . number_format($product->hpp, 0, ',', '.'),
+            'stock' => $product->stock,
+            'image' => $product->image,
+            'category_id' => $product->category_id,
+            'category_name' => $product->category->name,
+            'created_at' => $product->created_at->format('d/m/Y H:i'),
+        ];
+
+        return Inertia::render('admin/products/show', [
+            'product' => $productData
         ]);
     }
 
     /**
-     * API endpoint for getting single product
+     * Show the form for editing the specified resource.
      */
-    public function apiShow(int $id)
+    public function edit(string $id)
     {
-        $result = $this->productService->getProduct($id);
+        $product = Product::findOrFail($id);
+        $categories = ProductCategory::all();
 
-        if (!$result['success']) {
-            return response()->json([
-                'success' => false,
-                'message' => $result['message']
-            ], 404);
+        $productData = [
+            'id' => $product->id,
+            'category_id' => $product->category_id,
+            'name' => $product->name,
+            'slug' => $product->slug,
+            'description' => $product->description,
+            'price' => $product->price,
+            'hpp' => $product->hpp,
+            'stock' => $product->stock,
+            'image' => $product->image,
+        ];
+
+        return Inertia::render('admin/products/edit', [
+            'product' => $productData,
+            'categories' => $categories
+        ]);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, string $id)
+    {
+        $product = Product::findOrFail($id);
+
+        $request->validate([
+            'category_id' => 'required|exists:product_categories,id',
+            'name' => 'required|string|max:255|unique:products,name,' . $id,
+            'description' => 'nullable|string',
+            'price' => 'required|numeric|min:0',
+            'hpp' => 'required|numeric|min:0',
+            'stock' => 'required|integer|min:0',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+        ]);
+
+        $data = [
+            'category_id' => $request->category_id,
+            'name' => $request->name,
+            'description' => $request->description,
+            'price' => $request->price,
+            'hpp' => $request->hpp,
+            'stock' => $request->stock,
+        ];
+
+        // Generate new slug if name changed
+        if ($product->name !== $request->name) {
+            $slug = Str::slug($request->name);
+            $originalSlug = $slug;
+            $counter = 1;
+
+            while (Product::where('slug', $slug)->where('id', '!=', $id)->exists()) {
+                $slug = $originalSlug . '-' . $counter;
+                $counter++;
+            }
+
+            $data['slug'] = $slug;
         }
 
-        return response()->json([
-            'success' => true,
-            'data' => $result['product']
-        ]);
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            // Delete old image if exists
+            if ($product->image) {
+                Storage::disk('public')->delete($product->image);
+            }
+
+            $imagePath = $request->file('image')->store('products', 'public');
+            $data['image'] = $imagePath;
+        }
+
+        $product->update($data);
+
+        return redirect('/products')
+            ->with('success', 'Produk berhasil diupdate.');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $id)
+    {
+        $product = Product::findOrFail($id);
+
+        // Delete image if exists
+        if ($product->image) {
+            Storage::disk('public')->delete($product->image);
+        }
+
+        $product->delete();
+
+        return redirect('/products')
+            ->with('success', 'Produk berhasil dihapus.');
+    }
+
+    /**
+     * Handle price format conversion
+     */
+    private function convertPriceFormat($price)
+    {
+        if (is_string($price)) {
+            // Remove 'Rp', spaces, and dots, then convert to integer
+            $cleanPrice = preg_replace('/[^0-9]/', '', $price);
+            return $cleanPrice ? (int) $cleanPrice : 0;
+        }
+
+        return $price;
     }
 }
