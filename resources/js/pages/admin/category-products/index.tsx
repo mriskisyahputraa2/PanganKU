@@ -148,5 +148,5 @@ const CategoryProduct = ({ categories = [], urlCreate }) => {
         </AppLayout>
     );
 };
-
+//
 export default CategoryProduct;
