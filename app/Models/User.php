@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail; // ✅ import MustVerifyEmail
+// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable implements MustVerifyEmail // ✅ tambahkan implements
+class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
@@ -21,7 +21,6 @@ class User extends Authenticatable implements MustVerifyEmail // ✅ tambahkan i
         'name',
         'email',
         'password',
-        'role', // tetap ada
     ];
 
     /**
@@ -45,13 +44,5 @@ class User extends Authenticatable implements MustVerifyEmail // ✅ tambahkan i
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
-    }
-
-    /**
-     * Cek apakah user ini admin
-     */
-    public function isAdmin(): bool
-    {
-        return $this->role === 'admin';
     }
 }

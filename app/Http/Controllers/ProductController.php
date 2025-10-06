@@ -31,7 +31,8 @@ class ProductController extends Controller
                     'formatted_hpp' => 'Rp ' . number_format($product->hpp, 0, ',', '.'),
                     'stock' => $product->stock,
                     'image' => $product->image,
-                    'category_name' => $product->category->name,
+                    // fix error: gunakan optional() agar tidak error kalau category null
+                    'category_name' => optional($product->category)->name ?? '-',
                     'created_at' => $product->created_at->format('d/m/Y H:i'),
                 ];
             });
@@ -119,7 +120,7 @@ class ProductController extends Controller
             'stock' => $product->stock,
             'image' => $product->image,
             'category_id' => $product->category_id,
-            'category_name' => $product->category->name,
+            'category_name' => optional($product->category)->name ?? '-',
             'created_at' => $product->created_at->format('d/m/Y H:i'),
         ];
 

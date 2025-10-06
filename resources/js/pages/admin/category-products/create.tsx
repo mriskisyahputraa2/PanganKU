@@ -1,63 +1,71 @@
-import AppLayout from '@/layouts/app-layout';
+import React from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
+import AppLayout from '@/layouts/app-layout';
 
-// Menerima props 'storeUrl' dan 'indexUrl' dari controller
-export default function CreateCategory({ storeUrl, indexUrl }) {
-    const { data, setData, post, errors, processing } = useForm({
-        name: '',
+const Create = () => {
+    const { data, setData, post, processing, errors } = useForm({
+        name: ''
     });
 
-    const handleSubmit = (e) => {
+    const submit = (e) => {
         e.preventDefault();
-        // Kirim data ke URL yang diberikan oleh props 'storeUrl'
-        post(storeUrl);
+        post('/category-products');
     };
 
     return (
         <AppLayout>
             <Head title="Tambah Kategori Produk" />
 
-            <div className="mx-auto max-w-2xl rounded-lg bg-white p-6 shadow-md">
-                <div className="mb-6 flex items-center justify-between">
-                    <h1 className="text-2xl font-semibold">Tambah Kategori Baru</h1>
-                    {/* Tombol Kembali menggunakan URL dari props 'indexUrl' */}
-                    <Link
-                        href={indexUrl}
-                        className="rounded-md bg-gray-500 px-4 py-2 text-sm font-medium text-white hover:bg-gray-600 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none"
-                    >
-                        Kembali
-                    </Link>
+            {/* Wrapper hitam + posisi tengah */}
+            <div className="flex justify-center bg-black py-10">
+                <div className="w-full max-w-md bg-neutral-900 rounded-lg shadow-lg p-6">
+
+                    {/* Judul */}
+                    <h1 className="text-xl font-bold text-white mb-4">
+                        Tambah Kategori Baru
+                    </h1>
+
+                    {/* Form */}
+                    <form onSubmit={submit}>
+                        {/* Input Nama */}
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                                Nama Kategori
+                            </label>
+                            <input
+                                type="text"
+                                value={data.name}
+                                onChange={(e) => setData('name', e.target.value)}
+                                className="w-full px-3 py-2 rounded-md bg-neutral-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            />
+                            {errors.name && (
+                                <p className="text-red-500 text-sm mt-1">
+                                    {errors.name}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Tombol Aksi */}
+                        <div className="flex justify-between">
+                            <Link
+                                href="/category-products"
+                                className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600"
+                            >
+                                Kembali
+                            </Link>
+                            <button
+                                type="submit"
+                                disabled={processing}
+                                className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                            >
+                                Simpan Kategori
+                            </button>
+                        </div>
+                    </form>
                 </div>
-
-                <form onSubmit={handleSubmit}>
-                    <div className="mb-4">
-                        <label htmlFor="name" className="mb-1 block text-sm font-medium text-gray-700">
-                            Nama Kategori
-                        </label>
-                        <input
-                            type="text"
-                            id="name"
-                            name="name"
-                            value={data.name}
-                            onChange={(e) => setData('name', e.target.value)}
-                            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
-                            autoFocus
-                        />
-                        {/* Tampilkan pesan error jika ada */}
-                        {errors.name && <div className="mt-1 text-sm text-red-600">{errors.name}</div>}
-                    </div>
-
-                    <div className="mt-6 flex items-center justify-end">
-                        <button
-                            type="submit"
-                            disabled={processing}
-                            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:bg-blue-300"
-                        >
-                            {processing ? 'Menyimpan...' : 'Simpan Kategori'}
-                        </button>
-                    </div>
-                </form>
             </div>
         </AppLayout>
     );
-}
+};
+
+export default Create;
