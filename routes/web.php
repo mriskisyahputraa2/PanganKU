@@ -1,49 +1,57 @@
 <?php
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\DashboardController;
+
+use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use App\Http\Controllers\CategoryProductController;
 
-Route::get('/', function (){
-    return Inertia::render('welcome');
-})->name('home');
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductControllerUser;
+use App\Http\Controllers\ProductCategoryController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\CartController;
 
-
-// Role:
-// User (pembeli)
-// Admin (yang mengatur sistem = category product, product, dll)
-
+// 🏠 Halaman utama
 Route::get('/', function () {
-    return Inertia::render('welcome');
-})->name('home');
+    return Inertia::render('Welcome', [
+        'canLogin' => Route::has('login'),
+        'canRegister' => Route::has('register'),
+        'laravelVersion' => Application::VERSION,
+        'phpVersion' => PHP_VERSION,
+    ]);
+});
 
-// Route::get('/category-product', function () {
-//     return Inertia::render('admin.category-products.index');
-// });
+// 🧾 Dashboard (Admin)
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
-
-// Halamanan Khusus Admin
+// 🧾 Produk (Admin)
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
-
-    // Route untuk halaman product(admin)
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
     Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
     Route::post('/products', [ProductController::class, 'store'])->name('products.store');
-    Route::get('/products/{id}', [ProductController::class, 'show'])->name('products.show');
-    Route::get('/products/{id}/edit', [ProductController::class, 'edit'])->name('products.edit');
-    Route::put('/products/{id}', [ProductController::class, 'update'])->name('products.update');
-    Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
-    // halaman category product
-    Route::resource('/category-products', CategoryProductController::class);
+    Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
+    Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
+    Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
 
+    // 📦 Kategori Produk
+    Route::get('/categories', [ProductCategoryController::class, 'index'])->name('categories.index');
+    Route::post('/categories', [ProductCategoryController::class, 'store'])->name('categories.store');
+    Route::put('/categories/{id}', [ProductCategoryController::class, 'update'])->name('categories.update');
+    Route::delete('/categories/{id}', [ProductCategoryController::class, 'destroy'])->name('categories.destroy');
 });
 
+// 👨‍🌾 Halaman user produk
+Route::get('/daftar-products', [ProductControllerUser::class, 'index'])->name('user.products');
 
-;
+// 🛒 Keranjang
+Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
+Route::delete('/cart/{id}', [CartController::class, 'destroy'])->name('cart.destroy');
 
-require __DIR__.'/auth.php';
-require __DIR__.'/settings.php';
+// 💳 Checkout
+Route::post('/checkout', [CartController::class, 'checkout'])->name('cart.checkout');
+
+// 🔐 Auth default
+require __DIR__ . '/auth.php';
