@@ -4,18 +4,14 @@ use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\CategoryProductController;
-
-Route::get('/', function (){
-    return Inertia::render('welcome');
-})->name('home');
-
+use App\Http\Controllers\Settings\ProfileController;
 
 // Role:
 // User (pembeli)
 // Admin (yang mengatur sistem = category product, product, dll)
 
 Route::get('/', function () {
-    return Inertia::render('welcome');
+    return Inertia::render('homepage');
 })->name('home');
 
 // Route::get('/category-product', function () {

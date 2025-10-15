@@ -1,23 +1,21 @@
-import { wayfinder } from '@laravel/vite-plugin-wayfinder';
-import tailwindcss from '@tailwindcss/vite';
-import react from '@vitejs/plugin-react';
-import laravel from 'laravel-vite-plugin';
 import { defineConfig } from 'vite';
+import laravel from 'laravel-vite-plugin';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+import tailwindcss from '@tailwindcss/vite'; // 🟢 tambahkan baris ini
 
 export default defineConfig({
-    plugins: [
-        laravel({
-            input: ['resources/css/app.css', 'resources/js/app.tsx'],
-            ssr: 'resources/js/ssr.tsx',
-            refresh: true,
-        }),
-        react(),
-        tailwindcss(),
-        // wayfinder({
-        //     formVariants: true,
-        // }),
-    ],
-    esbuild: {
-        jsx: 'automatic',
+  plugins: [
+    laravel({
+      input: ['resources/css/app.css', 'resources/js/app.tsx'], // 🟢 pastikan CSS ikut
+      refresh: true,
+    }),
+    react(),
+    tailwindcss(), // 🟢 aktifkan plugin tailwind di Vite
+  ],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'resources/js'),
     },
+  },
 });
