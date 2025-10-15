@@ -11,3 +11,5 @@ branch feature -> commit -> pull from development -> push to branch feature -> p
 - feat: perubahan yang mempengaruhi fungsionalitas
 - refactor: perubahan yang tidak mempengaruhi fungsionalitas
 - chord: perubahan yang tidak berbuhungan dengan development
+
+
